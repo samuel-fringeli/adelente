@@ -348,9 +348,8 @@ void* client_function(void *thread_arg) {
 int main(int argc, char* argv[]) {
 	flic_hostname = "localhost";
 	flic_port = atoi("5551");
-	string webserver_addr = "0.0.0.0";
+	string webserver_addr = "127.0.0.1";
 	int webserver_port = atoi("5553");
-
 
 	if (argc < 5) {
 		fprintf(stderr, "Usage: %s flicd-host flicd-port webserver-bind-addr webserver-bind-port\n", argv[0]);

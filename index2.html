@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <script type="text/javascript" src="http://localhost:8080/adelente/jquery-2.2.3.min.js"></script>
+<link rel="stylesheet" href="http://localhost:8080/adelente/bootstrap.min.css">
+<style>
+    table { 
+        border-collapse: collapse; 
+        text-align: center;
+        border: none;
+    }
+    .flic-img {
+        width: 60px;
+        height: 60px;
+        display: inline-block;
+    }
+    th {
+        width: 200px;
+        height: 50px;
+    }
+    .alert-base {
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+        width: 600px;
+    }
+    #video-content {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: black;
+    }
+    #video-content video {
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+    }
+    .blurred {
+        -webkit-filter: blur(10px);
+        -moz-filter: blur(10px);
+        -o-filter: blur(10px);
+        -ms-filter: blur(10px);
+        filter: blur(10px);
+    }
+    .grayscale {
+        filter: grayscale(1);
+        -webkit-filter: grayscale(1); 
+        filter: grayscale(100%); 
+    }
+    video {
+        cusror: none;
+    }
+</style>
+    </head>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    window.invert_buttons = false;
+
+    var socket = io.connect('http://localhost:8081');
+
+    var buttonStatus = {
+        black: 'up',
+        green: 'up',
+        blue: 'up',
+        white: 'up'
+    }
+
+    function isVideoShown() {
+        return (videoContent.style.display === 'block');
+    }
+
+    function toggleVideo() {
+        if (isVideoShown()) {
+            videoContent.style.display = 'none';
+            video.pause();
+            video.currentTime = 0;
+        }
+        else {
+            videoContent.style.display = 'block';
+            videoActions('all');
+            video.play();
+        }
+    }
+
+    function blurVideo(blur) {
+        if (blur) {
+            video.classList.add('blurred');
+        }
+        else {
+            video.classList.remove('blurred');
+        }
+    }
+
+    function grayScaleVideo(gray) {
+        if (gray) {
+            videoContent.classList.add('grayscale');
+        }
+        else {
+            videoContent.classList.remove('grayscale');
+        }
+    }
+
+    function videoActions(buttonColor) {
+        switch(buttonColor) {
+            case 'all':
+                video.muted = true;
+                blurVideo(true);
+                grayScaleVideo(true);
+                break;
+
+            case 'green':
+                video.muted = (buttonStatus['green'] === 'down');
+                break;
+
+            case 'white':
+                blurVideo(buttonStatus['white'] === 'down');
+                break;
+
+            case 'blue':
+                grayScaleVideo(buttonStatus['blue'] === 'down');
+                break;
+        }
+    }
+
+    socket.on('flicButtonEvent', function(message) { 
+        var possible_routes = ['/black/up', '/black/down', '/green/up', '/green/down', '/white/up', '/white/down', '/blue/up', '/blue/down'];
+        
+        if (window.invert_buttons) {
+            if (message.includes('/up')) {
+                message = message.replace('/up', '/down');
+            }
+            else {
+                message = message.replace('/down', '/up');
+            }
+        }
+
+        switch(message) {
+            case '/black/up':
+                buttonStatus.black = 'up';
+                $('#flic_black .pressed').html('appuyé');
+                window.lastBlackClickedTime = Date.now();
+                setTimeout(function() {
+                    if (window.lastBlackClickedTime !== 0) {
+                        if (-(window.lastBlackClickedTime - Date.now()) > 1900) {
+                            toggleVideo();
+                        }
+                    }
+                }, 2000)
+                if (isVideoShown()) { videoActions('black'); }
+                break;
+            case '/black/down':
+                buttonStatus.black = 'down';
+                window.lastBlackClickedTime = 0;
+                $('#flic_black .pressed').html('inactif');
+                if (isVideoShown()) { videoActions('black'); }
+                break;
+            case '/green/up':
+                buttonStatus.green = 'up';
+                $('#flic_green .pressed').html('appuyé');
+                if (isVideoShown()) { videoActions('green'); }
+                break;
+            case '/green/down':
+                buttonStatus.green = 'down';
+                $('#flic_green .pressed').html('inactif');
+                if (isVideoShown()) { videoActions('green'); }
+                break;
+            case '/white/up':
+                buttonStatus.white = 'up';
+                $('#flic_white .pressed').html('appuyé');
+                if (isVideoShown()) { videoActions('white'); }
+                break;
+            case '/white/down':
+                buttonStatus.white = 'down';
+                $('#flic_white .pressed').html('inactif');
+                if (isVideoShown()) { videoActions('white'); }
+                break;
+            case '/blue/up':
+                buttonStatus.blue = 'up';
+                $('#flic_blue .pressed').html('appuyé');
+                if (isVideoShown()) { videoActions('blue'); }
+                break;
+            case '/blue/down':
+                buttonStatus.blue = 'down';
+                $('#flic_blue .pressed').html('inactif');
+                if (isVideoShown()) { videoActions('blue'); }
+                break;
+        }
+    })
+
+    setTimeout(window.location.reload, 500);
+</script>
+
+    <body><br>
+<div class="alert alert-info alert-base">
+    Pour démarrer la vidéo, appuyez durant 2 secondes sur le bouton noir.<br>
+    Pour mettre en plein écran, appuyez sur les touches ctrl + cmd + f.
+</div>
+
+<table border="1" align="center">
+    <thead>
+        <tr>
+            <th>Bouton</th>
+            <th>Bouton pressé</th>
+        </tr>
+    </thead>
+<tbody id="flics">
+    <tr id="flic_black">
+        <td>
+            <img class="flic-img" src="http://localhost:8080/adelente/flic-btns/black.png">
+        </td>
+        <td class="pressed">inactif</td>
+    </tr>
+    <tr id="flic_green">
+        <td>
+            <img class="flic-img" src="http://localhost:8080/adelente/flic-btns/green.png">
+        </td>
+        <td class="pressed">inactif</td>
+    </tr>
+    <tr id="flic_blue">
+        <td>
+            <img class="flic-img" src="http://localhost:8080/adelente/flic-btns/blue.png">
+        </td>
+        <td class="pressed">inactif</td>
+    </tr>
+    <tr id="flic_white">
+        <td>
+            <img class="flic-img" src="http://localhost:8080/adelente/flic-btns/white.png">
+        </td>
+        <td class="pressed">inactif</td>
+    </tr>
+</tbody>
+</table>
+<center class="mt-4">
+    <div class="btn btn-success" id="invert_btn">Activer l'inversion des boutons</div>
+    <div class="btn btn-danger d-none" id="uninvert_btn">Désactiver l'inversion des boutons</div>
+</center>
+<br>
+<div id="video-content">
+    <video>
+      <source src="http://localhost:8080/adelente/adelente.mp4" type="video/mp4">
+      <span style="color: white;">Your browser does not support the video tag.</span>
+    </video>
+</div>
+
+<script>
+    var videoContent = document.getElementById('video-content');
+    var video = videoContent.getElementsByTagName('video')[0];
+
+    document.getElementById('invert_btn').addEventListener('click', function() {
+        window.invert_buttons = true;
+        this.classList.add('d-none');
+        document.getElementById('uninvert_btn').classList.remove('d-none');
+    });
+
+    document.getElementById('uninvert_btn').addEventListener('click', function() {
+        window.invert_buttons = false;
+        this.classList.add('d-none');
+        document.getElementById('invert_btn').classList.remove('d-none');
+    });
+</script>
+
+</body>
+</html>
